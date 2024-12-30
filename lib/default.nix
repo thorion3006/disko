@@ -2,6 +2,7 @@
 , rootMountPoint ? "/mnt"
 , makeTest ? import <nixpkgs/nixos/tests/make-test-python.nix>
 , eval-config ? import <nixpkgs/nixos/lib/eval-config.nix>
+, toplevel-config ? {}
 }:
 let
   outputs = import ../default.nix { inherit lib diskoLib; };
@@ -23,7 +24,7 @@ let
     };
 
     # option for valid contents of partitions (basically like devices, but without tables)
-    _partitionTypes = { inherit (diskoLib.types) btrfs filesystem zfs mdraid luks lvm_pv swap; };
+    _partitionTypes = { inherit (diskoLib.types) bcachefs btrfs filesystem zfs mdraid luks lvm_pv swap; };
     partitionType = extraArgs: lib.mkOption {
       type = lib.types.nullOr (diskoLib.subType {
         types = diskoLib._partitionTypes;
@@ -34,7 +35,7 @@ let
     };
 
     # option for valid contents of devices
-    _deviceTypes = { inherit (diskoLib.types) table gpt btrfs filesystem zfs mdraid luks lvm_pv swap; };
+    _deviceTypes = { inherit (diskoLib.types) table gpt bcachefs btrfs filesystem zfs mdraid luks lvm_pv swap; };
     deviceType = extraArgs: lib.mkOption {
       type = lib.types.nullOr (diskoLib.subType {
         types = diskoLib._deviceTypes;
@@ -246,7 +247,7 @@ let
           postUnmountHook = diskoLib.mkHook "shell commands to run after unmount";
         };
         config._module.args = {
-          inherit diskoLib rootMountPoint;
+          inherit diskoLib rootMountPoint toplevel-config;
         };
       }
     ];
@@ -397,11 +398,11 @@ let
       };
     };
 
-    /* topLevel type of the disko config, takes attrsets of disks, mdadms, zpools, nodevs, and lvm vgs.
+    /* topLevel type of the disko config, takes attrsets of disks, mdadms, xbpools, zpools, nodevs, and lvm vgs.
     */
     toplevel = lib.types.submodule (cfg:
       let
-        devices = { inherit (cfg.config) disk mdadm zpool lvm_vg nodev; };
+        devices = { inherit (cfg.config) disk mdadm xbpool zpool lvm_vg nodev; };
       in
       {
         options = {
@@ -414,6 +415,11 @@ let
             type = lib.types.attrsOf diskoLib.types.mdadm;
             default = { };
             description = "mdadm device";
+          };
+          xbpool = lib.mkOption {
+            type = lib.types.attrsOf diskoLib.types.xbpool;
+            default = { };
+            description = "BcacheFS pool device";
           };
           zpool = lib.mkOption {
             type = lib.types.attrsOf diskoLib.types.zpool;
@@ -718,6 +724,16 @@ let
                 collectedConfigs = flatten (map (dev: dev._config) (flatten (map attrValues (attrValues devices))));
               in
               genAttrs configKeys (key: mkMerge (catAttrs key collectedConfigs));
+          };
+          _internal = {
+            xbpools = lib.mkOption {
+              internal = true;
+              type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+              description = ''
+                Disko Internal List of BcacheFS pool's
+              '';
+              default = {};
+            };
           };
         };
       });
