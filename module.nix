@@ -227,6 +227,7 @@ in
       rootMountPoint = config.disko.rootMountPoint;
       makeTest = import (pkgs.path + "/nixos/tests/make-test-python.nix");
       eval-config = import (pkgs.path + "/nixos/lib/eval-config.nix");
+      toplevel-config = config;
     };
 
     system.build = (cfg.devices._scripts { inherit pkgs; checked = cfg.checkScripts; }) // (
