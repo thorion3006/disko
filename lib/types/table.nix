@@ -1,4 +1,4 @@
-{ config, options, lib, diskoLib, parent, device, ... }:
+{ config, options, lib, diskoLib, parent, device, toplevel-config, ... }:
 {
   options = lib.warn ''
     The legacy table is outdated and should not be used. We recommend using the gpt type instead.
@@ -61,7 +61,7 @@
               default = false;
               description = "Whether to make the partition bootable";
             };
-            content = diskoLib.partitionType { parent = config; device = diskoLib.deviceNumbering config.device partition.config._index; };
+            content = diskoLib.partitionType { parent = config; device = diskoLib.deviceNumbering config.device partition.config._index; inherit toplevel-config; };
             _index = lib.mkOption {
               type = lib.types.int;
               internal = true;

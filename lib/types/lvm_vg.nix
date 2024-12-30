@@ -1,4 +1,4 @@
-{ config, options, lib, diskoLib, ... }:
+{ config, options, lib, diskoLib, toplevel-config, ... }:
 let
   # Load kernel modules to ensure device mapper types are available
   kernelModules =
@@ -58,7 +58,7 @@ in
             default = null;
             description = "Name of pool LV that this LV belongs to";
           };
-          content = diskoLib.partitionType { parent = config; device = "/dev/${config.name}/${lv.config.name}"; };
+          content = diskoLib.partitionType { parent = config; device = "/dev/${config.name}/${lv.config.name}"; inherit toplevel-config; };
         };
       }));
       default = { };
